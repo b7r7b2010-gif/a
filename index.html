@@ -1539,6 +1539,7 @@ body {
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
+
 <script>
 /* ═══════════════════════════════════════════════════
    CONFIG — Supabase
@@ -1578,10 +1579,9 @@ const state = {
 };
 
 /* ═══════════════════════════════════════════════════
-   EXPORT TO WHATSAPP EXTENSION (أتمتة الواتساب من الجدول)
+   EXPORT TO WHATSAPP EXTENSION
 ═══════════════════════════════════════════════════ */
 async function exportWeeklyWhatsApp() {
-  // نأخذ اليوم من القائمة المنسدلة الجديدة الموجودة بجانب الزر
   const selectedDay = document.getElementById('waExportDay').value;
   const dayNames = ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس'];
   const dayIndex = dayNames.indexOf(selectedDay);
@@ -1608,12 +1608,9 @@ async function exportWeeklyWhatsApp() {
       teachersList.forEach(t => { phoneMap[t.name] = t.phone; });
     }
 
-    const rows = [];
-    rows.push(['رقم الجوال', 'اسم المعلم', 'نص الرسالة']); 
-
+    const rows = [['رقم الجوال', 'اسم المعلم', 'نص الرسالة']];
     const defaultLocs = ['المشرف','الفناء الشمالي','الفناء الشمالي','المقصف','المقصف','الفناء الشرقي','الفناء الشرقي','الملعب','الملعب'];
 
-    // استخراج المناوب
     const manName = slots[`man_${dayIndex}`];
     if (manName) {
       const phone = phoneMap[manName] || '';
@@ -1621,7 +1618,6 @@ async function exportWeeklyWhatsApp() {
       rows.push([phone, manName, msg]);
     }
 
-    // استخراج المشرفين
     for (let l = 0; l < 9; l++) {
       const supName = slots[`sup_${dayIndex}_${l}`];
       const locName = slots[`loc_${dayIndex}_${l}`] || defaultLocs[l]; 
@@ -1739,8 +1735,64 @@ async function loadDashboard() {
 }
 
 /* ═══════════════════════════════════════════════════
-   DAILY REPORT — SAVE
+   DAILY REPORT — SAVE & DATES & PRINT
 ═══════════════════════════════════════════════════ */
+function updateHijri() {
+  // تم إلغاء التحويل للهجري لتثبيت التاريخ الميلادي
+  syncPrint();
+}
+
+function syncPrint() {
+  const gVal = document.getElementById('dateG').value || '—';
+  document.getElementById('p-day').textContent = document.getElementById('dayName').value || '—';
+  document.getElementById('p-dateg').textContent = gVal;
+  
+  const pDateH = document.getElementById('p-dateh');
+  if (pDateH) pDateH.textContent = gVal; // عرض التاريخ الميلادي في خانة التاريخ بالطباعة
+
+  document.getElementById('p-supervisor').textContent = document.getElementById('supervisorName').value || '—';
+  document.getElementById('p-notes').textContent = document.getElementById('notes').value || '—';
+
+  const absVal = document.querySelector('input[name=absence]:checked')?.value || 'لا';
+  document.getElementById('p-abs-no').className = 'kalesha-choice-box' + (absVal === 'لا' ? ' checked' : '');
+  document.getElementById('p-abs-yes').className = 'kalesha-choice-box' + (absVal === 'نعم' ? ' checked' : '');
+  document.getElementById('p-abs-names').textContent = absVal === 'نعم' ? state.selected.abs.join('، ') : '';
+
+  const sigVal = document.querySelector('input[name=signature]:checked')?.value || 'نعم';
+  document.getElementById('p-sig-no').className = 'kalesha-choice-box' + (sigVal === 'لا' ? ' checked' : '');
+  document.getElementById('p-sig-yes').className = 'kalesha-choice-box' + (sigVal === 'نعم' ? ' checked' : '');
+  document.getElementById('p-sig-names').textContent = sigVal === 'لا' ? state.selected.sig.join('، ') : '';
+
+  const posVal = document.querySelector('input[name=positions]:checked')?.value || 'نعم';
+  document.getElementById('p-pos-no').className = 'kalesha-choice-box' + (posVal === 'لا' ? ' checked' : '');
+  document.getElementById('p-pos-yes').className = 'kalesha-choice-box' + (posVal === 'نعم' ? ' checked' : '');
+  document.getElementById('p-pos-names').textContent = posVal === 'لا' ? state.selected.pos.join('، ') : '';
+}
+
+function syncPrintFromRecord(r) {
+  const gVal = r.date_g || '—';
+  document.getElementById('p-day').textContent = r.day_name || '—';
+  document.getElementById('p-dateg').textContent = gVal;
+  
+  const pDateH = document.getElementById('p-dateh');
+  if (pDateH) pDateH.textContent = gVal;
+
+  document.getElementById('p-supervisor').textContent = r.supervisor_name || '—';
+  document.getElementById('p-notes').textContent = r.notes || '—';
+
+  document.getElementById('p-abs-no').className = 'kalesha-choice-box' + (r.absence_val === 'لا' ? ' checked' : '');
+  document.getElementById('p-abs-yes').className = 'kalesha-choice-box' + (r.absence_val === 'نعم' ? ' checked' : '');
+  document.getElementById('p-abs-names').textContent = r.absence_val === 'نعم' ? (r.absence_teachers || []).join('، ') : '';
+
+  document.getElementById('p-sig-no').className = 'kalesha-choice-box' + (r.sig_val === 'لا' ? ' checked' : '');
+  document.getElementById('p-sig-yes').className = 'kalesha-choice-box' + (r.sig_val === 'نعم' ? ' checked' : '');
+  document.getElementById('p-sig-names').textContent = r.sig_val === 'لا' ? (r.sig_teachers || []).join('، ') : '';
+
+  document.getElementById('p-pos-no').className = 'kalesha-choice-box' + (r.pos_val === 'لا' ? ' checked' : '');
+  document.getElementById('p-pos-yes').className = 'kalesha-choice-box' + (r.pos_val === 'نعم' ? ' checked' : '');
+  document.getElementById('p-pos-names').textContent = r.pos_val === 'لا' ? (r.pos_teachers || []).join('، ') : '';
+}
+
 async function saveDailyReport() {
   const dateG = document.getElementById('dateG').value;
   const dayName = document.getElementById('dayName').value;
@@ -1754,7 +1806,7 @@ async function saveDailyReport() {
 
   const record = {
     date_g: dateG,
-    date_h: document.getElementById('dateH').value || hijriFromG(),
+    date_h: dateG, // التثبيت بالميلادي
     day_name: dayName,
     absence_val: absVal,
     sig_val: sigVal,
@@ -1764,7 +1816,7 @@ async function saveDailyReport() {
     pos_teachers: state.selected.pos,
     notes: document.getElementById('notes').value,
     supervisor_name: document.getElementById('supervisorName').value,
-    school_year: '١٤٤٧'
+    school_year: new Date(dateG).getFullYear().toString()
   };
 
   showSaving('جاري الحفظ في قاعدة البيانات...');
@@ -1825,7 +1877,7 @@ function renderDailyCard(r, showActions = false) {
     </div>` : `<div class="record-actions"><button class="btn btn-sm btn-primary" onclick="viewDailyRecord('${r.id}')">👁️ عرض</button></div>`;
 
   return `
-    <div class="record-card" onclick="">
+    <div class="record-card">
       <div class="record-date">${r.date_g || '—'}</div>
       <div class="record-day">${r.day_name || '—'}</div>
       <div class="record-meta">
@@ -1846,7 +1898,6 @@ async function viewDailyRecord(id) {
       <div style="font-size:13px;line-height:2;font-weight:700;">
         <p><strong>اليوم:</strong> ${r.day_name}</p>
         <p><strong>التاريخ الميلادي:</strong> ${r.date_g}</p>
-        <p><strong>التاريخ الهجري:</strong> ${r.date_h || '—'}</p>
         <p><strong>الوكيل:</strong> ${r.supervisor_name || '—'}</p>
         <hr style="margin:10px 0;border:none;border-top:1px solid #eee;">
         <p><strong>الغياب:</strong> ${r.absence_val} ${r.absence_teachers?.length ? '— ' + r.absence_teachers.join('، ') : ''}</p>
@@ -1889,6 +1940,7 @@ const locsTemplate = ['المشرف','الفناء الشمالي','الفناء
 
 function buildScheduleTable() {
   const tbody = document.getElementById('moeTableBody');
+  if (!tbody) return;
   tbody.innerHTML = '';
   let opts = '<option value=""></option>';
   state.schedTeachers.forEach(t => opts += `<option value="${t.name}">${t.name}</option>`);
@@ -1917,16 +1969,22 @@ function buildScheduleTable() {
 function schedChanged() { saveScheduleLocal(); }
 
 function updateWeekDates() {
-  const wv = document.getElementById('weekNumberSelect').value;
+  const wv = document.getElementById('weekNumberSelect')?.value || 'الأول';
   const wc = document.getElementById('weekCell');
   if (wc) wc.innerText = wv;
-  const sv = document.getElementById('weekStartDate').value;
+  const sv = document.getElementById('weekStartDate')?.value;
   if (!sv) return;
   const sd = new Date(sv);
   for (let i = 0; i < 5; i++) {
-    const d = new Date(sd); d.setDate(sd.getDate() + i);
-    const fmt = new Intl.DateTimeFormat('ar-SA-u-ca-islamic', { day:'numeric', month:'numeric', year:'numeric' });
-    let s = fmt.format(d).replace(/هـ/g,'').trim().replace(/\d/g, c => '٠١٢٣٤٥٦٧٨٩'[c]);
+    const d = new Date(sd); 
+    d.setDate(sd.getDate() + i);
+    
+    // التنسيق بالميلادي (السنة/الشهر/اليوم)
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    let s = `${y}/${m}/${day}`;
+
     const cell = document.getElementById(`dc_${i}`);
     if (cell) cell.innerText = s;
   }
@@ -1935,8 +1993,8 @@ function updateWeekDates() {
 
 function saveScheduleLocal() {
   const data = {
-    weekNum: document.getElementById('weekNumberSelect').value,
-    weekDate: document.getElementById('weekStartDate').value,
+    weekNum: document.getElementById('weekNumberSelect')?.value,
+    weekDate: document.getElementById('weekStartDate')?.value,
     manaoub: {}, supervisors: {}, locations: {}
   };
   document.querySelectorAll('.sched-manaoub').forEach(s => { if(s.value) data.manaoub[s.dataset.day] = s.value; });
@@ -1950,8 +2008,8 @@ function loadScheduleLocal() {
   if (!saved) return;
   try {
     const d = JSON.parse(saved);
-    if (d.weekNum) { document.getElementById('weekNumberSelect').value = d.weekNum; const wc = document.getElementById('weekCell'); if(wc) wc.innerText = d.weekNum; }
-    if (d.weekDate) { document.getElementById('weekStartDate').value = d.weekDate; updateWeekDates(); }
+    if (d.weekNum && document.getElementById('weekNumberSelect')) { document.getElementById('weekNumberSelect').value = d.weekNum; const wc = document.getElementById('weekCell'); if(wc) wc.innerText = d.weekNum; }
+    if (d.weekDate && document.getElementById('weekStartDate')) { document.getElementById('weekStartDate').value = d.weekDate; updateWeekDates(); }
     document.querySelectorAll('.sched-manaoub').forEach(s => { const v = d.manaoub[s.dataset.day]; if(v){if(![...s.options].some(o=>o.value===v))s.add(new Option(v,v));s.value=v;} });
     document.querySelectorAll('.sched-super').forEach(s => { const v = d.supervisors[`${s.dataset.day}-${s.dataset.loc}`]; if(v){if(![...s.options].some(o=>o.value===v))s.add(new Option(v,v));s.value=v;} });
     document.querySelectorAll('.loc-input').forEach(s => { const v = d.locations[`${s.dataset.day}-${s.dataset.loc}`]; if(v) s.value=v; });
@@ -1970,7 +2028,7 @@ async function saveSchedule() {
 
   showSaving('جاري حفظ الجدول...');
   try {
-    await sbFetch('weekly_schedules', { method:'POST', body: JSON.stringify({ week_number: weekNum, week_start_date: weekDate, school_year: '١٤٤٧', slots }) });
+    await sbFetch('weekly_schedules', { method:'POST', body: JSON.stringify({ week_number: weekNum, week_start_date: weekDate, school_year: new Date(weekDate).getFullYear().toString(), slots }) });
     hideSaving();
     showToast('✅ تم حفظ الجدول بنجاح', 'success');
   } catch(e) {
@@ -2005,7 +2063,7 @@ async function loadScheduleArchive() {
       <div class="record-card">
         <div class="record-date">الأسبوع ${r.week_number}</div>
         <div class="record-day">${r.week_start_date || '—'}</div>
-        <div class="record-meta"><span class="record-tag ok">📅 ${r.school_year} هـ</span></div>
+        <div class="record-meta"><span class="record-tag ok">📅 ${r.school_year || ''}</span></div>
         <div class="record-actions">
           <button class="btn btn-sm btn-primary" onclick="loadScheduleFromRecord('${r.id}')">📥 تحميل</button>
           <button class="btn btn-sm btn-ghost" onclick="deleteScheduleRecord('${r.id}')">🗑️ حذف</button>
@@ -2045,7 +2103,7 @@ async function deleteScheduleRecord(id) {
 }
 
 /* ═══════════════════════════════════════════════════
-   EXCEL IMPORT
+   EXCEL PARSER
 ═══════════════════════════════════════════════════ */
 function parseExcel(file, cb) {
   const r = new FileReader();
@@ -2062,7 +2120,13 @@ function parseExcel(file, cb) {
           if (/^[0-9\+\-\s]+$/.test(s) && s.replace(/\D/g,'').length >= 9) phone = s;
           else if (/[\u0600-\u06FF]/.test(s) && s.length > 2) name = s;
         });
-        if (name && !seen.has(name)) { seen.add(name); let p = phone.replace(/\D/g,''); if(p.startsWith('05'))p='966'+p.slice(1); else if(p.startsWith('5'))p='966'+p; out.push({name, phone:p}); }
+        if (name && !seen.has(name)) { 
+          seen.add(name); 
+          let p = phone.replace(/\D/g,''); 
+          if(p.startsWith('05')) p = '966' + p.slice(1); 
+          else if(p.startsWith('5')) p = '966' + p; 
+          out.push({name, phone: p}); 
+        }
       });
       cb(out);
     } catch(err) { alert('تعذر قراءة الملف'); }
@@ -2070,14 +2134,12 @@ function parseExcel(file, cb) {
   r.readAsArrayBuffer(file);
 }
 
-function loadTeachersFromExcel(input) {}
-function loadTeachersSchedule(input)  {}
-
 /* ═══════════════════════════════════════════════════
    DAILY FORM LOGIC
 ═══════════════════════════════════════════════════ */
 function toggleSection(id, show) {
-  document.getElementById(id).classList[show ? 'remove' : 'add']('hidden');
+  const el = document.getElementById(id);
+  if (el) el.classList[show ? 'remove' : 'add']('hidden');
 }
 
 function addTeacher(type) {
@@ -2092,6 +2154,7 @@ function addTeacher(type) {
 function renderTags(type) {
   const ids = { abs:'absTags', sig:'sigTags', pos:'posTags' };
   const container = document.getElementById(ids[type]);
+  if (!container) return;
   container.innerHTML = state.selected[type].map((n,i) => {
     const t = state.teachers.find(x => x.name === n);
     let wa = '';
@@ -2116,7 +2179,7 @@ function getMsg(type, name) {
 function sendAllWa(type) {
   const names = state.selected[type];
   const withPhone = names.filter(n => { const t = state.teachers.find(x=>x.name===n); return t?.phone; });
-  if (!withPhone.length) { showToast('لا تتوفر أرقام جوال', 'error'); return; }
+  if (!withPhone.length) { showToast('لا تتوفر أرقام جوال للمحددين', 'error'); return; }
   if (!confirm(`إرسال رسالة واتساب لـ ${withPhone.length} معلم؟`)) return;
   withPhone.forEach((n,i) => {
     const t = state.teachers.find(x=>x.name===n);
@@ -2126,528 +2189,311 @@ function sendAllWa(type) {
 
 function resetDailyForm() {
   if (!confirm('تصفير التقرير؟')) return;
-  ['dayName','dateG','dateH','notes','supervisorName'].forEach(id => document.getElementById(id).value='');
-  document.getElementById('hijriAuto').textContent='';
-  state.selected = { abs:[], sig:[], pos:[] };
-  ['absTags','sigTags','posTags'].forEach(id => document.getElementById(id).innerHTML='');
-  document.getElementById('absArea').classList.add('hidden');
-  document.getElementById('sigArea').classList.remove('hidden');
-  document.getElementById('posArea').classList.remove('hidden');
-  document.querySelector('input[name=absence][value="لا"]').checked = true;
-  document.querySelector('input[name=signature][value="لا"]').checked = true;
-  document.querySelector('input[name=positions][value="لا"]').checked = true;
+  ['dayName','dateG','dateH','notes','supervisorName'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  const hijriEl = document.getElementById('hijriAuto');
+  if (hijriEl) hijriEl.textContent = '';
+  
+  state.selected = { abs: [], sig: [], pos: [] };
+  ['absTags','sigTags','posTags'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.innerHTML = '';
+  });
+  const absRad = document.querySelectorAll('input[name=absence]'); if (absRad[0]) absRad[0].checked = true;
+  const sigRad = document.querySelectorAll('input[name=signature]'); if (sigRad[0]) sigRad[0].checked = true;
+  const posRad = document.querySelectorAll('input[name=positions]'); if (posRad[1]) posRad[1].checked = true;
+  toggleSection('absArea', false);
+  toggleSection('sigArea', true);
+  toggleSection('posArea', true);
   syncPrint();
 }
 
 /* ═══════════════════════════════════════════════════
-   PRINT SYNC
+   TEACHERS MANAGEMENT LOGIC
 ═══════════════════════════════════════════════════ */
-function setCB(yId, nId, isYes) {
-  const y = document.getElementById(yId), n = document.getElementById(nId);
-  if (!y || !n) return;
-  if (isYes) { y.textContent='✓'; y.classList.add('checked'); n.textContent=''; n.classList.remove('checked'); }
-  else       { n.textContent='✓'; n.classList.add('checked'); y.textContent=''; y.classList.remove('checked'); }
-}
-
-function syncPrint() {
-  const g = id => document.getElementById(id);
-  g('p-day').textContent = g('dayName')?.value || '..................';
-  g('p-dateh').textContent = g('dateH')?.value || hijriFromG() || '..../.../...';
-  g('p-dateg').textContent = g('dateG')?.value || '..../.../...';
-  g('p-supervisor').textContent = g('supervisorName')?.value || '';
-  g('p-notes').textContent = g('notes')?.value || '';
-
-  const absY = document.querySelector('input[name=absence]:checked')?.value === 'نعم';
-  setCB('p-abs-yes','p-abs-no', absY);
-  g('p-abs-names').textContent = absY ? state.selected.abs.join(' — ') : '';
-
-  const sigY = document.querySelector('input[name=signature]:checked')?.value === 'نعم';
-  setCB('p-sig-yes','p-sig-no', sigY);
-  g('p-sig-names').textContent = !sigY ? state.selected.sig.join(' — ') : '';
-
-  const posY = document.querySelector('input[name=positions]:checked')?.value === 'نعم';
-  setCB('p-pos-yes','p-pos-no', posY);
-  g('p-pos-names').textContent = !posY ? state.selected.pos.join(' — ') : '';
-}
-
-function syncPrintFromRecord(r) {
-  const g = id => document.getElementById(id);
-  g('p-day').textContent  = r.day_name || '';
-  g('p-dateh').textContent = r.date_h || '';
-  g('p-dateg').textContent = r.date_g || '';
-  g('p-supervisor').textContent = r.supervisor_name || '';
-  g('p-notes').textContent = r.notes || '';
-  setCB('p-abs-yes','p-abs-no', r.absence_val==='نعم');
-  g('p-abs-names').textContent = r.absence_val==='نعم' ? (r.absence_teachers||[]).join(' — ') : '';
-  setCB('p-sig-yes','p-sig-no', r.sig_val==='نعم');
-  g('p-sig-names').textContent = r.sig_val!=='نعم' ? (r.sig_teachers||[]).join(' — ') : '';
-  setCB('p-pos-yes','p-pos-no', r.pos_val==='نعم');
-  g('p-pos-names').textContent = r.pos_val!=='نعم' ? (r.pos_teachers||[]).join(' — ') : '';
-}
-
-/* ═══════════════════════════════════════════════════
-   HIJRI
-═══════════════════════════════════════════════════ */
-function updateHijri() {
-  const val = document.getElementById('dateG').value; if (!val) return;
-  try {
-    const d = new Date(val);
-    const h = new Intl.DateTimeFormat('ar-SA-u-ca-islamic',{year:'numeric',month:'long',day:'numeric'}).format(d);
-    document.getElementById('hijriAuto').textContent = '≈ ' + h;
-    document.getElementById('dateH').placeholder = h;
-  } catch(e) {}
-}
-
-function hijriFromG() {
-  try {
-    const val = document.getElementById('dateG').value; if (!val) return '';
-    return new Intl.DateTimeFormat('ar-SA-u-ca-islamic',{year:'numeric',month:'numeric',day:'numeric'}).format(new Date(val)).replace(/هـ/g,'').trim();
-  } catch(e) { return ''; }
-}
-
-/* ═══════════════════════════════════════════════════
-   SETTINGS
-═══════════════════════════════════════════════════ */
-function saveSettings() {
-  const sy = document.getElementById('set-schoolYear').value;
-  document.getElementById('schoolYearPrint').value = sy;
-  const def = document.getElementById('set-defaultSupervisor').value;
-  if (def) document.getElementById('supervisorName').value = def;
-  localStorage.setItem('schoolSettings', JSON.stringify({
-    schoolYear: sy,
-    schoolName: document.getElementById('set-schoolName').value,
-    defaultSupervisor: def,
-    principal: document.getElementById('set-principal').value
-  }));
-  showToast('✅ تم حفظ الإعدادات', 'success');
-}
-
-function loadSettings() {
-  const saved = localStorage.getItem('schoolSettings');
-  if (!saved) return;
-  try {
-    const s = JSON.parse(saved);
-    if (s.schoolYear) { document.getElementById('set-schoolYear').value = s.schoolYear; document.getElementById('schoolYearPrint').value = s.schoolYear; }
-    if (s.schoolName) document.getElementById('set-schoolName').value = s.schoolName;
-    if (s.defaultSupervisor) { document.getElementById('set-defaultSupervisor').value = s.defaultSupervisor; document.getElementById('supervisorName').value = s.defaultSupervisor; }
-    if (s.principal) document.getElementById('set-principal').value = s.principal;
-  } catch(e) {}
-}
-
-/* ═══════════════════════════════════════════════════
-   UI HELPERS
-═══════════════════════════════════════════════════ */
-function showSaving(msg = 'جاري المعالجة...') {
-  document.getElementById('savingText').textContent = msg;
-  document.getElementById('savingOverlay').classList.add('show');
-}
-function hideSaving() { document.getElementById('savingOverlay').classList.remove('show'); }
-
-function showToast(msg, type = 'info') {
-  const c = document.getElementById('toastContainer');
-  const t = document.createElement('div');
-  t.className = `toast ${type}`;
-  t.textContent = msg;
-  c.appendChild(t);
-  setTimeout(() => t.remove(), 3200);
-}
-
-function closeModal() { document.getElementById('recordModal').classList.remove('show'); }
-document.getElementById('recordModal').addEventListener('click', e => { if(e.target === document.getElementById('recordModal')) closeModal(); });
-
-/* ═══════════════════════════════════════════════════
-   TEACHERS MANAGEMENT — قاعدة بيانات المعلمين
-═══════════════════════════════════════════════════ */
-const tchState = {
-  all: [],
-  filtered: [],
-  page: 1,
-  perPage: 15,
-  importData: [],
-  importDuplicates: 0
-};
-
-async function loadTeachersPage() {
-  const tbody = document.getElementById('teachersTableBody');
-  tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:30px;color:var(--muted);">⏳ جاري التحميل...</td></tr>`;
-
+async function loadTeachersData() {
   try {
     const data = await sbFetch('teachers?select=*&order=name.asc');
-    tchState.all = data || [];
-    tchState.filtered = [...tchState.all];
-    tchState.page = 1;
-
-    const total = tchState.all.length;
-    const withPhone = tchState.all.filter(t => t.phone && t.phone.length > 5).length;
-    document.getElementById('tch-stat-total').textContent   = total;
-    document.getElementById('tch-stat-phone').textContent   = withPhone;
-    document.getElementById('tch-stat-nophone').textContent = total - withPhone;
-
-    renderTeachersTable();
+    state.teachers = data || [];
+    state.schedTeachers = [...state.teachers];
+    populateTeacherSelects();
+    buildScheduleTable();
   } catch(e) {
-    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:30px;color:var(--red);">⚠️ خطأ في التحميل: ${e.message}</td></tr>`;
+    console.error('فشل تحميل قائمة المعلمين:', e);
   }
 }
 
-function renderTeachersTable() {
-  const tbody = document.getElementById('teachersTableBody');
-  const total = tchState.filtered.length;
-  const start = (tchState.page - 1) * tchState.perPage;
-  const end   = Math.min(start + tchState.perPage, total);
-  const rows  = tchState.filtered.slice(start, end);
-
-  if (!rows.length) {
-    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:40px;color:var(--muted);">📭 لا توجد نتائج</td></tr>`;
-    document.getElementById('tchPagination').innerHTML = '';
-    return;
+function populateTeacherSelects() {
+  const selects = ['absSelect', 'sigSelect', 'posSelect'];
+  selects.forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.innerHTML = '<option value="">-- اختر معلماً --</option>' +
+      state.teachers.map(t => `<option value="${t.name}">${t.name}</option>`).join('');
+  });
+  
+  const badge = document.getElementById('teacherCount');
+  const schedBadge = document.getElementById('schedTeacherCount');
+  const notice = document.getElementById('noTeachersNotice');
+  if (badge) {
+    badge.textContent = `${state.teachers.length} معلم`;
+    badge.style.display = 'inline-block';
   }
-
-  tbody.innerHTML = rows.map((t, i) => {
-    const globalIdx = start + i + 1;
-    const displayPhone = t.phone || '—';
-    const waLink = t.phone
-      ? `<a href="https://wa.me/${t.phone}" target="_blank" title="فتح واتساب" style="display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;background:#25D366;color:white;border-radius:8px;text-decoration:none;font-size:14px;transition:transform 0.2s;" onmouseover="this.style.transform='scale(1.15)'" onmouseout="this.style.transform='scale(1)'">💬</a>`
-      : `<span style="color:var(--muted);font-size:11px;">لا يوجد</span>`;
-
-    const rowBg = i % 2 === 0 ? '#ffffff' : '#F8FBFD';
-
-    return `
-      <tr style="background:${rowBg};transition:background 0.15s;" onmouseover="this.style.background='#EBF9F5'" onmouseout="this.style.background='${rowBg}'">
-        <td style="padding:9px 12px;text-align:center;color:var(--muted);font-size:11px;font-weight:700;border-bottom:1px solid #EEF3F7;">${globalIdx}</td>
-        <td style="padding:9px 12px;text-align:right;font-weight:800;color:var(--navy);font-size:13px;border-bottom:1px solid #EEF3F7;">
-          <div style="display:flex;align-items:center;gap:8px;">
-            <div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--navy),var(--teal));color:white;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:900;flex-shrink:0;">${(t.name||'?').charAt(0)}</div>
-            ${t.name || '—'}
-          </div>
-        </td>
-        <td style="padding:9px 12px;text-align:center;font-size:12px;font-weight:700;color:var(--text);border-bottom:1px solid #EEF3F7;direction:ltr;">${displayPhone}</td>
-        <td style="padding:9px 12px;text-align:center;border-bottom:1px solid #EEF3F7;">${waLink}</td>
-        <td style="padding:9px 12px;text-align:center;border-bottom:1px solid #EEF3F7;">
-          <div style="display:flex;gap:5px;justify-content:center;">
-            <button onclick="openEditTeacherModal('${t.id}','${(t.name||'').replace(/'/g,"\\'")}','${t.phone||''}')" style="padding:4px 10px;background:linear-gradient(135deg,var(--navy),var(--teal));color:white;border:none;border-radius:7px;font-family:'Cairo',sans-serif;font-size:11px;font-weight:700;cursor:pointer;transition:all 0.2s;" onmouseover="this.style.transform='translateY(-1px)'" onmouseout="this.style.transform='translateY(0)'">✏️ تعديل</button>
-            <button onclick="deleteTeacher('${t.id}','${(t.name||'').replace(/'/g,"\\'")}')" style="padding:4px 10px;background:white;color:var(--red);border:1.5px solid #FBBAB4;border-radius:7px;font-family:'Cairo',sans-serif;font-size:11px;font-weight:700;cursor:pointer;transition:all 0.2s;" onmouseover="this.style.background='var(--red)';this.style.color='white'" onmouseout="this.style.background='white';this.style.color='var(--red)'">🗑️ حذف</button>
-          </div>
-        </td>
-      </tr>`;
-  }).join('');
-
-  const totalPages = Math.ceil(total / tchState.perPage);
-  const pagination = document.getElementById('tchPagination');
-  if (totalPages <= 1) { pagination.innerHTML = ''; return; }
-
-  let pages = '';
-  for (let p = 1; p <= totalPages; p++) {
-    pages += `<button class="page-btn${p===tchState.page?' active':''}" onclick="tchGoPage(${p})">${p}</button>`;
+  if (schedBadge) {
+    schedBadge.textContent = `${state.teachers.length} معلم`;
+    schedBadge.style.display = 'inline-block';
   }
-  pagination.innerHTML = `
-    <button class="page-btn" onclick="tchGoPage(${tchState.page-1})" ${tchState.page===1?'disabled':''}>›</button>
-    ${pages}
-    <button class="page-btn" onclick="tchGoPage(${tchState.page+1})" ${tchState.page===totalPages?'disabled':''}>‹</button>
-    <span style="font-size:11px;color:var(--muted);padding:0 8px;">عرض ${start+1}–${end} من ${total}</span>`;
+  if (notice) {
+    notice.style.display = state.teachers.length === 0 ? 'flex' : 'none';
+  }
 }
 
-function tchGoPage(p) {
-  const maxP = Math.ceil(tchState.filtered.length / tchState.perPage);
-  if (p < 1 || p > maxP) return;
-  tchState.page = p;
+let teachersPageCurrent = 1;
+const teachersPerPage = 10;
+let filteredTeachersList = [];
+
+function loadTeachersPage() {
+  filteredTeachersList = [...state.teachers];
   renderTeachersTable();
 }
 
 function filterTeachersTable() {
-  const nameQ  = (document.getElementById('tchSearchName').value || '').trim().toLowerCase();
+  const nameQ = document.getElementById('tchSearchName').value.trim().toLowerCase();
   const phoneQ = document.getElementById('tchSearchPhone').value;
 
-  tchState.filtered = tchState.all.filter(t => {
-    const nameMatch  = !nameQ  || (t.name||'').toLowerCase().includes(nameQ);
-    const phoneMatch = !phoneQ
-      || (phoneQ==='yes' && t.phone && t.phone.length > 5)
-      || (phoneQ==='no'  && (!t.phone || t.phone.length <= 5));
-    return nameMatch && phoneMatch;
+  filteredTeachersList = state.teachers.filter(t => {
+    const matchName = t.name.toLowerCase().includes(nameQ);
+    let matchPhone = true;
+    if (phoneQ === 'yes') matchPhone = !!t.phone;
+    if (phoneQ === 'no') matchPhone = !t.phone;
+    return matchName && matchPhone;
   });
 
-  tchState.page = 1;
+  teachersPageCurrent = 1;
   renderTeachersTable();
 }
 
-function openAddTeacherModal() {
-  document.getElementById('editTeacherId').value   = '';
-  document.getElementById('editTeacherName').value  = '';
-  document.getElementById('editTeacherPhone').value = '';
-  document.getElementById('teacherModalTitle').textContent = '➕ إضافة معلم جديد';
-  document.getElementById('teacherModalError').style.display = 'none';
-  document.getElementById('waPreview').style.display = 'none';
-  document.getElementById('teacherModal').classList.add('show');
-  setTimeout(() => document.getElementById('editTeacherName').focus(), 100);
+function renderTeachersTable() {
+  const total = state.teachers.length;
+  const hasPhone = state.teachers.filter(t => t.phone).length;
+  const noPhone = total - hasPhone;
+
+  document.getElementById('tch-stat-total').textContent = total;
+  document.getElementById('tch-stat-phone').textContent = hasPhone;
+  document.getElementById('tch-stat-nophone').textContent = noPhone;
+
+  const tbody = document.getElementById('teachersTableBody');
+  if (!tbody) return;
+  if (filteredTeachersList.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:40px;color:var(--muted);">لا توجد نتائج</td></tr>';
+    document.getElementById('tchPagination').innerHTML = '';
+    return;
+  }
+
+  const start = (teachersPageCurrent - 1) * teachersPerPage;
+  const end = start + teachersPerPage;
+  const pageItems = filteredTeachersList.slice(start, end);
+
+  tbody.innerHTML = pageItems.map((t, idx) => `
+    <tr style="border-bottom:1px solid #eee;">
+      <td style="padding:10px;text-align:center;font-weight:700;">${start + idx + 1}</td>
+      <td style="padding:10px;font-weight:800;color:var(--navy);">${t.name}</td>
+      <td style="padding:10px;text-align:center;direction:ltr;">${t.phone || '—'}</td>
+      <td style="padding:10px;text-align:center;">
+        ${t.phone ? `<a href="https://wa.me/${t.phone}" target="_blank" class="btn btn-wa btn-sm">💬 واتساب</a>` : '—'}
+      </td>
+      <td style="padding:10px;text-align:center;">
+        <button class="btn btn-sm btn-save" onclick='openAddTeacherModal(${JSON.stringify(t)})'>✏️</button>
+        <button class="btn btn-sm btn-ghost" onclick="deleteTeacher('${t.id}')">🗑️</button>
+      </td>
+    </tr>
+  `).join('');
+
+  const totalPages = Math.ceil(filteredTeachersList.length / teachersPerPage);
+  let pagHtml = '';
+  for (let i = 1; i <= totalPages; i++) {
+    pagHtml += `<button class="page-btn ${i === teachersPageCurrent ? 'active' : ''}" onclick="changeTeachersPage(${i})">${i}</button>`;
+  }
+  document.getElementById('tchPagination').innerHTML = pagHtml;
 }
 
-function openEditTeacherModal(id, name, phone) {
-  document.getElementById('editTeacherId').value   = id;
-  document.getElementById('editTeacherName').value  = name;
-  document.getElementById('editTeacherPhone').value = phone;
-  document.getElementById('teacherModalTitle').textContent = '✏️ تعديل بيانات المعلم';
+function changeTeachersPage(p) {
+  teachersPageCurrent = p;
+  renderTeachersTable();
+}
+
+function openAddTeacherModal(teacher = null) {
+  document.getElementById('editTeacherId').value = teacher ? teacher.id : '';
+  document.getElementById('editTeacherName').value = teacher ? teacher.name : '';
+  document.getElementById('editTeacherPhone').value = teacher ? (teacher.phone || '') : '';
+  document.getElementById('teacherModalTitle').textContent = teacher ? '✏️ تعديل بيانات معلم' : '➕ إضافة معلم جديد';
   document.getElementById('teacherModalError').style.display = 'none';
-  previewWaLink(phone);
+  previewWaLink(teacher ? teacher.phone : '');
   document.getElementById('teacherModal').classList.add('show');
-  setTimeout(() => document.getElementById('editTeacherName').focus(), 100);
 }
 
 function closeTeacherModal() {
   document.getElementById('teacherModal').classList.remove('show');
 }
 
-function previewWaLink(raw) {
+function closeModal() {
+  document.getElementById('recordModal').classList.remove('show');
+}
+
+function previewWaLink(val) {
   const preview = document.getElementById('waPreview');
-  const link    = document.getElementById('waPreviewLink');
-  let p = (raw||'').replace(/\D/g,'');
+  const link = document.getElementById('waPreviewLink');
+  let p = (val || '').trim().replace(/\D/g, '');
   if (p.startsWith('05')) p = '966' + p.slice(1);
-  else if (p.startsWith('5') && p.length === 9) p = '966' + p;
-  if (p.length >= 11) {
-    preview.style.display = 'block';
+  else if (p.startsWith('5')) p = '966' + p;
+
+  if (p.length >= 9) {
     link.href = `https://wa.me/${p}`;
+    preview.style.display = 'block';
   } else {
     preview.style.display = 'none';
   }
 }
 
 async function saveTeacher() {
-  const id    = document.getElementById('editTeacherId').value.trim();
-  const name  = document.getElementById('editTeacherName').value.trim();
-  let   phone = document.getElementById('editTeacherPhone').value.trim();
-  const errEl = document.getElementById('teacherModalError');
+  const id = document.getElementById('editTeacherId').value;
+  const name = document.getElementById('editTeacherName').value.trim();
+  let phone = document.getElementById('editTeacherPhone').value.trim().replace(/\D/g, '');
+  const errDiv = document.getElementById('teacherModalError');
 
   if (!name) {
-    errEl.textContent = '⚠️ يرجى إدخال اسم المعلم';
-    errEl.style.display = 'block'; return;
+    errDiv.textContent = 'يرجى إدخال اسم المعلم';
+    errDiv.style.display = 'block';
+    return;
   }
 
-  if (phone) {
-    let p = phone.replace(/\D/g,'');
-    if (p.startsWith('05')) p = '966' + p.slice(1);
-    else if (p.startsWith('5') && p.length === 9) p = '966' + p;
-    phone = p;
-  }
+  if (phone.startsWith('05')) phone = '966' + phone.slice(1);
+  else if (phone.startsWith('5')) phone = '966' + phone;
 
-  const dup = tchState.all.find(t => t.name === name && t.id !== id);
-  if (dup) {
-    errEl.textContent = `⚠️ المعلم "${name}" موجود بالفعل في القائمة`;
-    errEl.style.display = 'block'; return;
-  }
-
-  errEl.style.display = 'none';
-  showSaving(id ? 'جاري تحديث البيانات...' : 'جاري إضافة المعلم...');
-
+  showSaving('جاري حفظ المعلم...');
   try {
     if (id) {
-      await sbFetch(`teachers?id=eq.${id}`, { method: 'PATCH', headers: { 'Prefer': 'return=representation' }, body: JSON.stringify({ name, phone: phone || null }) });
+      await sbFetch(`teachers?id=eq.${id}`, { method: 'PATCH', body: JSON.stringify({ name, phone }) });
     } else {
-      await sbFetch('teachers', { method: 'POST', body: JSON.stringify({ name, phone: phone || null }) });
+      await sbFetch('teachers', { method: 'POST', body: JSON.stringify({ name, phone }) });
     }
     hideSaving();
     closeTeacherModal();
-    showToast(id ? '✅ تم تحديث بيانات المعلم' : '✅ تم إضافة المعلم بنجاح', 'success');
-    await loadTeachersPage();
-    syncTeachersToDropdowns();
+    showToast('✅ تم حفظ المعلم بنجاح', 'success');
+    await loadTeachersData();
+    loadTeachersPage();
   } catch(e) {
     hideSaving();
-    errEl.textContent = '❌ فشل الحفظ: ' + e.message;
-    errEl.style.display = 'block';
+    errDiv.textContent = '❌ خطأ: ' + e.message;
+    errDiv.style.display = 'block';
   }
 }
 
-async function deleteTeacher(id, name) {
-  if (!confirm(`هل أنت متأكد من حذف المعلم "${name}"؟\nهذا الإجراء لا يمكن التراجع عنه.`)) return;
+async function deleteTeacher(id) {
+  if (!confirm('هل أنت متأكد من حذف هذا المعلم؟')) return;
   showSaving('جاري الحذف...');
   try {
     await sbFetch(`teachers?id=eq.${id}`, { method: 'DELETE' });
     hideSaving();
-    showToast('✅ تم حذف المعلم', 'success');
-    await loadTeachersPage();
-    syncTeachersToDropdowns();
+    showToast('✅ تم الحذف بنجاح', 'success');
+    await loadTeachersData();
+    loadTeachersPage();
   } catch(e) {
     hideSaving();
-    showToast('❌ فشل الحذف: ' + e.message, 'error');
+    showToast('❌ خطأ: ' + e.message, 'error');
   }
 }
 
-async function syncTeachersToDropdowns() {
-  try {
-    const data = await sbFetch('teachers?select=name,phone&order=name.asc');
-    if (!data) return;
-
-    state.teachers = data;
-    state.schedTeachers = data;
-
-    ['absSelect','sigSelect','posSelect'].forEach(id => {
-      const s = document.getElementById(id);
-      if (!s) return;
-      const cur = s.value;
-      s.innerHTML = '<option value="">-- اختر معلماً --</option>';
-      data.forEach(t => s.innerHTML += `<option value="${t.name}">${t.name}</option>`);
-      s.value = cur;
-    });
-
-    const schedOpts = '<option value=""></option>' + data.map(t => `<option value="${t.name}">${t.name}</option>`).join('');
-    document.querySelectorAll('.sched-manaoub,.sched-super').forEach(sel => {
-      const cur = sel.value;
-      sel.innerHTML = schedOpts;
-      if (cur) { if (![...sel.options].some(o=>o.value===cur)) sel.add(new Option(cur,cur)); sel.value = cur; }
-    });
-
-    const notice = document.getElementById('noTeachersNotice');
-    if (notice) notice.style.display = data.length === 0 ? 'flex' : 'none';
-
-    document.getElementById('teacherCount').textContent = data.length + ' معلم';
-    document.getElementById('teacherCount').style.display = data.length ? 'inline-block' : 'none';
-    document.getElementById('schedTeacherCount').textContent = data.length + ' معلم';
-    document.getElementById('schedTeacherCount').style.display = data.length ? 'inline-block' : 'none';
-  } catch(e) {}
-}
-
 function exportTeachersExcel() {
-  if (!tchState.all.length) { showToast('لا توجد بيانات للتصدير', 'error'); return; }
+  if (!state.teachers.length) {
+    showToast('⚠️ لا يوجد معلمون للتصدير', 'error');
+    return;
+  }
   const rows = [['اسم المعلم', 'رقم الجوال']];
-  tchState.all.forEach(t => rows.push([t.name||'', t.phone||'']));
+  state.teachers.forEach(t => rows.push([t.name, t.phone || '']));
   const ws = XLSX.utils.aoa_to_sheet(rows);
-  ws['!cols'] = [{ wch: 30 }, { wch: 18 }];
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'المعلمون');
   XLSX.writeFile(wb, 'قائمة_المعلمين.xlsx');
-  showToast('✅ تم تصدير الملف', 'success');
 }
 
 /* ═══════════════════════════════════════════════════
-   IMPORT EXCEL
+   IMPORT TEACHERS FROM EXCEL
 ═══════════════════════════════════════════════════ */
+let pendingImportData = [];
+
 function resetImportPage() {
-  tchState.importData = [];
-  document.getElementById('importPreviewSection').style.display = 'none';
   document.getElementById('importExcelFile').value = '';
-  const dz = document.getElementById('importDropZone');
-  dz.style.background = '#F8FCFF';
-  dz.style.borderColor = '#90bfe0';
+  document.getElementById('importPreviewSection').style.display = 'none';
+  pendingImportData = [];
 }
 
-function handleFileDrop(event) {
-  event.preventDefault();
-  const dz = document.getElementById('importDropZone');
-  dz.style.background = '#F8FCFF';
-  dz.style.borderColor = '#90bfe0';
-  const file = event.dataTransfer.files[0];
-  if (file) processImportFile(file);
+function handleFileDrop(e) {
+  e.preventDefault();
+  const dropZone = document.getElementById('importDropZone');
+  dropZone.style.background = '#F8FCFF';
+  dropZone.style.borderColor = '#90bfe0';
+  if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+    processImportFile(e.dataTransfer.files[0]);
+  }
 }
 
 function previewImport(input) {
-  const file = input.files[0];
-  if (!file) return;
-  processImportFile(file);
+  if (input.files && input.files[0]) {
+    processImportFile(input.files[0]);
+  }
 }
 
 function processImportFile(file) {
-  const reader = new FileReader();
-  reader.onload = async e => {
-    try {
-      const wb   = XLSX.read(new Uint8Array(e.target.result), { type:'array' });
-      const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header:1 });
-
-      const parsed = [];
-      const seen   = new Set();
-      rows.forEach((row, ri) => {
-        if (!row || !row.length) return;
-        let name='', phone='';
-        row.forEach(cell => {
-          const s = String(cell||'').trim();
-          if (!s) return;
-          const digits = s.replace(/\D/g,'');
-          if (digits.length >= 9 && /^[0-9\+\s\-]+$/.test(s)) phone = s;
-          else if (/[\u0600-\u06FF]/.test(s) && s.length >= 2) name = s;
-        });
-        if (!name) return;
-        if (phone) {
-          let p = phone.replace(/\D/g,'');
-          if (p.startsWith('05')) p = '966'+p.slice(1);
-          else if (p.startsWith('5') && p.length===9) p = '966'+p;
-          phone = p;
-        }
-        parsed.push({ name, phone: phone || null });
-      });
-
-      let existingNames = new Set();
-      try {
-        const existing = await sbFetch('teachers?select=name');
-        if (existing) existing.forEach(t => existingNames.add(t.name));
-      } catch(e) {}
-
-      const withStatus = [];
-      const localSeen  = new Set();
-      let dupCount = 0;
-      parsed.forEach(row => {
-        let status = 'new';
-        if (existingNames.has(row.name) || localSeen.has(row.name)) {
-          status = 'duplicate';
-          dupCount++;
-        }
-        localSeen.add(row.name);
-        withStatus.push({ ...row, status });
-      });
-
-      tchState.importData = withStatus;
-      tchState.importDuplicates = dupCount;
-
-      document.getElementById('importPreviewCount').textContent = withStatus.length + ' سجل';
-      const dupBadge = document.getElementById('importDuplicateCount');
-      dupBadge.textContent = dupCount > 0 ? `${dupCount} مكرر` : '';
-      dupBadge.style.display = dupCount > 0 ? 'inline-block' : 'none';
-
-      const previewBody = document.getElementById('importPreviewBody');
-      previewBody.innerHTML = withStatus.map((row, i) => {
-        const isNew = row.status === 'new';
-        const bg    = i%2===0 ? '#fff' : '#F8FBFD';
-        const badge = isNew
-          ? `<span style="background:#E8FBF5;color:var(--teal);font-size:10px;font-weight:800;padding:2px 8px;border-radius:8px;border:1px solid var(--emerald);">✅ جديد</span>`
-          : `<span style="background:#FFF3E0;color:#E65100;font-size:10px;font-weight:800;padding:2px 8px;border-radius:8px;border:1px solid #FFB74D;">⚠️ مكرر — سيُتجاهل</span>`;
-        return `
-          <tr style="background:${bg};">
-            <td style="padding:7px 10px;border-bottom:1px solid #EEF3F7;font-weight:700;color:${isNew?'var(--navy)':'var(--muted)'};">${row.name}</td>
-            <td style="padding:7px 10px;border-bottom:1px solid #EEF3F7;text-align:center;font-size:11px;direction:ltr;color:var(--muted);">${row.phone||'—'}</td>
-            <td style="padding:7px 10px;border-bottom:1px solid #EEF3F7;text-align:center;">${badge}</td>
-          </tr>`;
-      }).join('');
-
-      document.getElementById('importPreviewSection').style.display = 'block';
-
-      const newCount = withStatus.filter(r=>r.status==='new').length;
-      showToast(`تم تحميل ${withStatus.length} سجل — ${newCount} جديد، ${dupCount} مكرر`, 'info');
-    } catch(err) {
-      showToast('❌ تعذر قراءة الملف: ' + err.message, 'error');
+  parseExcel(file, (parsed) => {
+    if (!parsed || parsed.length === 0) {
+      showToast('⚠️ لم يتم العثور على أسماء معلمين بالملف', 'error');
+      return;
     }
-  };
-  reader.readAsArrayBuffer(file);
+    pendingImportData = parsed;
+    const existingNames = new Set(state.teachers.map(t => t.name));
+    let dupCount = 0;
+
+    const tbody = document.getElementById('importPreviewBody');
+    tbody.innerHTML = parsed.map(item => {
+      const isDup = existingNames.has(item.name);
+      if (isDup) dupCount++;
+      return `
+        <tr style="border-bottom:1px solid #eee;">
+          <td style="padding:8px 10px;font-weight:700;">${item.name}</td>
+          <td style="padding:8px 10px;text-align:center;direction:ltr;">${item.phone || '—'}</td>
+          <td style="padding:8px 10px;text-align:center;">
+            ${isDup ? '<span style="color:#E65100;font-weight:800;">مكرر (سيتحدث)</span>' : '<span style="color:var(--emerald);font-weight:800;">جديد</span>'}
+          </td>
+        </tr>
+      `;
+    }).join('');
+
+    document.getElementById('importPreviewCount').textContent = `${parsed.length} سجل`;
+    document.getElementById('importDuplicateCount').textContent = dupCount > 0 ? `${dupCount} مكرر` : '';
+    document.getElementById('importPreviewSection').style.display = 'block';
+  });
 }
 
 async function confirmImport() {
-  const newRows = tchState.importData.filter(r => r.status === 'new');
-  if (!newRows.length) { showToast('لا توجد سجلات جديدة للإضافة', 'error'); return; }
-
-  showSaving(`جاري إضافة ${newRows.length} معلم...`);
+  if (!pendingImportData.length) return;
+  showSaving('جاري استيراد وحفظ البيانات...');
   try {
-    const payload = newRows.map(r => ({ name: r.name, phone: r.phone || null }));
-
-    const batchSize = 50;
-    for (let i = 0; i < payload.length; i += batchSize) {
-      const batch = payload.slice(i, i + batchSize);
-      await sbFetch('teachers', { method: 'POST', headers: { 'Prefer': 'return=minimal' }, body: JSON.stringify(batch) });
-    }
-
+    await sbFetch('teachers', {
+      method: 'POST',
+      headers: { 'Prefer': 'resolution=merge-duplicates' },
+      body: JSON.stringify(pendingImportData)
+    });
     hideSaving();
-    showToast(`✅ تم إضافة ${newRows.length} معلم بنجاح`, 'success');
-    cancelImport();
-    await syncTeachersToDropdowns();
-
-    const btn = [...document.querySelectorAll('.nav-btn')].find(b => b.textContent.includes('قائمة المعلمين'));
-    showPage('teachers', btn);
+    showToast(`✅ تم استيراد ${pendingImportData.length} معلم بنجاح!`, 'success');
+    resetImportPage();
+    await loadTeachersData();
+    showPage('teachers', document.querySelectorAll('.nav-btn')[6]);
   } catch(e) {
     hideSaving();
-    showToast('❌ فشل الاستيراد: ' + e.message, 'error');
+    showToast('❌ حدث خطأ أثناء الاستيراد: ' + e.message, 'error');
   }
 }
 
@@ -2655,38 +2501,47 @@ function cancelImport() {
   resetImportPage();
 }
 
-document.getElementById('teacherModal').addEventListener('click', e => {
-  if (e.target === document.getElementById('teacherModal')) closeTeacherModal();
-});
+/* ═══════════════════════════════════════════════════
+   SETTINGS & UTILS
+═══════════════════════════════════════════════════ */
+function saveSettings() {
+  showToast('✅ تم حفظ الإعدادات', 'success');
+}
 
-window.addEventListener('beforeprint', syncPrint);
+function showSaving(txt) {
+  document.getElementById('savingText').textContent = txt || 'جاري الحفظ...';
+  document.getElementById('savingOverlay').classList.add('show');
+}
+
+function hideSaving() {
+  document.getElementById('savingOverlay').classList.remove('show');
+}
+
+function showToast(msg, type = 'info') {
+  const container = document.getElementById('toastContainer');
+  const toast = document.createElement('div');
+  toast.className = `toast ${type}`;
+  toast.innerHTML = msg;
+  container.appendChild(toast);
+  setTimeout(() => {
+    if (toast.parentNode) toast.parentNode.removeChild(toast);
+  }, 3000);
+}
 
 /* ═══════════════════════════════════════════════════
-   INIT
+   INIT APP
 ═══════════════════════════════════════════════════ */
-window.addEventListener('DOMContentLoaded', () => {
-  const today = new Date();
-  const yyyy = today.getFullYear();
-  const mm = String(today.getMonth()+1).padStart(2,'0');
-  const dd = String(today.getDate()).padStart(2,'0');
-  document.getElementById('dateG').value = `${yyyy}-${mm}-${dd}`;
-  updateHijri();
-
-  const todayName = new Intl.DateTimeFormat('ar-SA',{weekday:'long'}).format(today);
-  const sel = document.getElementById('dayName');
-  for (let i=0;i<sel.options.length;i++) { if(sel.options[i].text===todayName){sel.selectedIndex=i;break;} }
-
-  toggleSection('sigArea', true);
-  toggleSection('posArea', true);
-
-  loadSettings();
-  buildScheduleTable();
+document.addEventListener('DOMContentLoaded', async () => {
+  testConnection();
+  await loadTeachersData();
+  
+  const today = new Date().toISOString().split('T')[0];
+  const dateGEl = document.getElementById('dateG');
+  if (dateGEl) {
+    dateGEl.value = today;
+    updateHijri();
+  }
   syncPrint();
-  testConnection().then(ok => {
-    if (ok) syncTeachersToDropdowns();
-  });
-
-  document.querySelector('.nav-btn.active').click();
 });
 </script>
 </body>
