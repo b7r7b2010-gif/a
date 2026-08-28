@@ -358,6 +358,7 @@ body {
   box-shadow: 0 0 0 3px rgba(26,188,156,0.12);
 }
 
+.hijri-hint { font-size: 10px; color: var(--muted); margin-top: 3px; }
 
 /* CHECK ITEMS */
 .check-item {
@@ -996,7 +997,7 @@ body {
       <div class="kalesha-body">
         <div class="kalesha-title">تقرير الاشراف اليومي</div>
         <div class="kalesha-date-row">في يوم / <span class="kalesha-val" id="p-day"></span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</div>
-        <div class="kalesha-date-row">التاريخ / <span class="kalesha-val" id="p-dateg"></span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </div>
+        <div class="kalesha-date-row">التاريخ / <span class="kalesha-val" id="p-dateh"></span> &nbsp;/&nbsp; <span class="kalesha-val" id="p-dateg"></span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </div>
         <div class="kalesha-intro">تم متابعة اشراف المعلمين المحدد أسمائهم في سجل الاشراف اليومي وتم ملاحظة ما يلي</div>
         <div class="kalesha-item">
           <span class="kalesha-num">1-</span><span class="kalesha-label">غياب للمعلمين</span>
@@ -1059,7 +1060,12 @@ body {
           </div>
           <div class="field">
             <label>التاريخ الميلادي</label>
-            <input type="date" id="dateG" onchange="syncPrint();" />
+            <input type="date" id="dateG" onchange="updateHijri();syncPrint();" />
+          </div>
+          <div class="field">
+            <label>التاريخ الهجري</label>
+            <input type="text" id="dateH" placeholder="١٤٤٧/٠١/٠١" onchange="syncPrint()" />
+            <div class="hijri-hint" id="hijriAuto"></div>
           </div>
           <div class="field">
             <label>وكيل الشؤون التعليمية</label>
@@ -1748,7 +1754,7 @@ async function saveDailyReport() {
 
   const record = {
     date_g: dateG,
-    date_h: '',
+    date_h: document.getElementById('dateH').value || hijriFromG(),
     day_name: dayName,
     absence_val: absVal,
     sig_val: sigVal,
@@ -1840,6 +1846,7 @@ async function viewDailyRecord(id) {
       <div style="font-size:13px;line-height:2;font-weight:700;">
         <p><strong>اليوم:</strong> ${r.day_name}</p>
         <p><strong>التاريخ الميلادي:</strong> ${r.date_g}</p>
+        <p><strong>التاريخ الهجري:</strong> ${r.date_h || '—'}</p>
         <p><strong>الوكيل:</strong> ${r.supervisor_name || '—'}</p>
         <hr style="margin:10px 0;border:none;border-top:1px solid #eee;">
         <p><strong>الغياب:</strong> ${r.absence_val} ${r.absence_teachers?.length ? '— ' + r.absence_teachers.join('، ') : ''}</p>
@@ -1918,8 +1925,8 @@ function updateWeekDates() {
   const sd = new Date(sv);
   for (let i = 0; i < 5; i++) {
     const d = new Date(sd); d.setDate(sd.getDate() + i);
-    const fmt = new Intl.DateTimeFormat('ar-SA-u-ca-islamic', { day:'numeric', month:'numeric', year:'numeric' });
-    let s = fmt.format(d).replace(/هـ/g,'').trim().replace(/\d/g, c => '٠١٢٣٤٥٦٧٨٩'[c]);
+    const fmt = new Intl.DateTimeFormat('ar-SA-u-ca-gregory', { day:'numeric', month:'numeric', year:'numeric' });
+    let s = fmt.format(d).replace(/م$/,'').trim().replace(/\d/g, c => '٠١٢٣٤٥٦٧٨٩'[c]);
     const cell = document.getElementById(`dc_${i}`);
     if (cell) cell.innerText = s;
   }
@@ -2119,7 +2126,8 @@ function sendAllWa(type) {
 
 function resetDailyForm() {
   if (!confirm('تصفير التقرير؟')) return;
-  ['dayName','dateG','notes','supervisorName'].forEach(id => document.getElementById(id).value='');
+  ['dayName','dateG','dateH','notes','supervisorName'].forEach(id => document.getElementById(id).value='');
+  document.getElementById('hijriAuto').textContent='';
   state.selected = { abs:[], sig:[], pos:[] };
   ['absTags','sigTags','posTags'].forEach(id => document.getElementById(id).innerHTML='');
   document.getElementById('absArea').classList.add('hidden');
@@ -2144,6 +2152,7 @@ function setCB(yId, nId, isYes) {
 function syncPrint() {
   const g = id => document.getElementById(id);
   g('p-day').textContent = g('dayName')?.value || '..................';
+  g('p-dateh').textContent = g('dateH')?.value || hijriFromG() || '..../.../...';
   g('p-dateg').textContent = g('dateG')?.value || '..../.../...';
   g('p-supervisor').textContent = g('supervisorName')?.value || '';
   g('p-notes').textContent = g('notes')?.value || '';
@@ -2164,6 +2173,7 @@ function syncPrint() {
 function syncPrintFromRecord(r) {
   const g = id => document.getElementById(id);
   g('p-day').textContent  = r.day_name || '';
+  g('p-dateh').textContent = r.date_h || '';
   g('p-dateg').textContent = r.date_g || '';
   g('p-supervisor').textContent = r.supervisor_name || '';
   g('p-notes').textContent = r.notes || '';
@@ -2173,6 +2183,26 @@ function syncPrintFromRecord(r) {
   g('p-sig-names').textContent = r.sig_val!=='نعم' ? (r.sig_teachers||[]).join(' — ') : '';
   setCB('p-pos-yes','p-pos-no', r.pos_val==='نعم');
   g('p-pos-names').textContent = r.pos_val!=='نعم' ? (r.pos_teachers||[]).join(' — ') : '';
+}
+
+/* ═══════════════════════════════════════════════════
+   HIJRI
+═══════════════════════════════════════════════════ */
+function updateHijri() {
+  const val = document.getElementById('dateG').value; if (!val) return;
+  try {
+    const d = new Date(val);
+    const h = new Intl.DateTimeFormat('ar-SA-u-ca-islamic',{year:'numeric',month:'long',day:'numeric'}).format(d);
+    document.getElementById('hijriAuto').textContent = '≈ ' + h;
+    document.getElementById('dateH').placeholder = h;
+  } catch(e) {}
+}
+
+function hijriFromG() {
+  try {
+    const val = document.getElementById('dateG').value; if (!val) return '';
+    return new Intl.DateTimeFormat('ar-SA-u-ca-islamic',{year:'numeric',month:'numeric',day:'numeric'}).format(new Date(val)).replace(/هـ/g,'').trim();
+  } catch(e) { return ''; }
 }
 
 /* ═══════════════════════════════════════════════════
@@ -2640,6 +2670,7 @@ window.addEventListener('DOMContentLoaded', () => {
   const mm = String(today.getMonth()+1).padStart(2,'0');
   const dd = String(today.getDate()).padStart(2,'0');
   document.getElementById('dateG').value = `${yyyy}-${mm}-${dd}`;
+  updateHijri();
 
   const todayName = new Intl.DateTimeFormat('ar-SA',{weekday:'long'}).format(today);
   const sel = document.getElementById('dayName');
