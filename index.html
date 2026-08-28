@@ -2170,11 +2170,52 @@ function syncPrint() {
   g('p-pos-names').textContent = !posY ? state.selected.pos.join(' — ') : '';
 }
 
+/* ═══════════════════════════════════════════════════
+   PRINT SYNC (تعديل لعرض التاريخ الميلادي فقط)
+═══════════════════════════════════════════════════ */
+function syncPrint() {
+  const g = id => document.getElementById(id);
+  g('p-day').textContent = g('dayName')?.value || '..................';
+
+  // تفريغ عنصر التاريخ الهجري حتى لا يظهر في الطباعة
+  if (g('p-dateh')) g('p-dateh').textContent = '';
+
+  // تنسيق وعرض التاريخ الميلادي فقط (مثال: 28 أغسطس 2026)
+  const dateGVal = g('dateG')?.value;
+  if (dateGVal) {
+    g('p-dateg').textContent = new Date(dateGVal).toLocaleDateString('ar-EG', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+  } else {
+    g('p-dateg').textContent = '..../.../...';
+  }
+
+  g('p-supervisor').textContent = g('supervisorName')?.value || '';
+  g('p-notes').textContent = g('notes')?.value || '';
+
+  const absY = document.querySelector('input[name=absence]:checked')?.value === 'نعم';
+  setCB('p-abs-yes','p-abs-no', absY);
+  g('p-abs-names').textContent = absY ? state.selected.abs.join(' — ') : '';
+
+  const sigY = document.querySelector('input[name=signature]:checked')?.value === 'نعم';
+  setCB('p-sig-yes','p-sig-no', sigY);
+  g('p-sig-names').textContent = !sigY ? state.selected.sig.join(' — ') : '';
+
+  const posY = document.querySelector('input[name=positions]:checked')?.value === 'نعم';
+  setCB('p-pos-yes','p-pos-no', posY);
+  g('p-pos-names').textContent = !posY ? state.selected.pos.join(' — ') : '';
+}
+
 function syncPrintFromRecord(r) {
   const g = id => document.getElementById(id);
   g('p-day').textContent  = r.day_name || '';
-  g('p-dateh').textContent = r.date_h || '';
+  
+  // تفريغ الهجري وعرض الميلادي من السجل
+  if (g('p-dateh')) g('p-dateh').textContent = '';
   g('p-dateg').textContent = r.date_g || '';
+
   g('p-supervisor').textContent = r.supervisor_name || '';
   g('p-notes').textContent = r.notes || '';
   setCB('p-abs-yes','p-abs-no', r.absence_val==='نعم');
@@ -2183,19 +2224,6 @@ function syncPrintFromRecord(r) {
   g('p-sig-names').textContent = r.sig_val!=='نعم' ? (r.sig_teachers||[]).join(' — ') : '';
   setCB('p-pos-yes','p-pos-no', r.pos_val==='نعم');
   g('p-pos-names').textContent = r.pos_val!=='نعم' ? (r.pos_teachers||[]).join(' — ') : '';
-}
-
-/* ═══════════════════════════════════════════════════
-   HIJRI
-═══════════════════════════════════════════════════ */
-function updateHijri() {
-  const val = document.getElementById('dateG').value; if (!val) return;
-  try {
-    const d = new Date(val);
-    const h = new Intl.DateTimeFormat('ar-SA-u-ca-islamic',{year:'numeric',month:'long',day:'numeric'}).format(d);
-    document.getElementById('hijriAuto').textContent = '≈ ' + h;
-    document.getElementById('dateH').placeholder = h;
-  } catch(e) {}
 }
 
 function hijriFromG() {
